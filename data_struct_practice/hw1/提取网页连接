@@ -1,0 +1,48 @@
+import sys
+import re
+
+def mulitiple_text():
+    content = []
+    prev_empty = False  # 标记前一行是否为空
+
+    while True:
+        line = sys.stdin.readline()
+        if not line:  # 遇到文件末尾（EOF）时退出
+            break
+        content.append(line)
+        current_empty = (line == "\n")  # 当前行是否为空行
+        if current_empty and prev_empty:  # 连续两个空行时停止
+            break
+        prev_empty = current_empty
+
+    result = "".join(content)
+    return result
+
+def extract_urls(text):
+    """
+    提取文本中的所有链接，返回一个列表。
+    """
+    # 定义正则表达式模式来匹配 URL
+    url_pattern = re.compile(r'https?://[\w\-\./]*', re.IGNORECASE)
+    # 使用 findall 查找所有匹配的 URL
+    urls = re.findall(url_pattern, text)
+    return urls
+
+texts=mulitiple_text()
+# 提取链接并输出
+extracted_urls = extract_urls(texts)
+print(extracted_urls)
+
+'''
+从标准输入读取文本
+text = sys.stdin.read()用于一次性读取所有内容
+text = sys.stdin.readline()用于逐行读取
+text = sys.stdin.readlines()用于读取所有行
+input会自动处理换行符，而sys.stdin.readline()不会
+'''
+
+#正则表达式相关见obsidian
+'''
+re.compile(pattern, flags=0)  # 编译正则表达式模式
+re.match(pattern, string, flags=0)  # 从字符串的开头匹配
+'''

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>每日知识挑战</title>
+    <style>
+        :root {
+            --primary: #6c5ce7;
+            --secondary: #a8a4ff;
+            --background: linear-gradient(135deg, #f8f9ff 0%, #e7f0fd 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Helvetica Neue', sans-serif;
+            background: var(--background);
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.98);
+            width: 100%;
+            max-width: 800px;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(108, 92, 231, 0.15);
+            transform-style: preserve-3d;
+        }
+
+        .question-card {
+            position: relative;
+            perspective: 1000px;
+        }
+
+        .question-header {
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .question-header h2 {
+            color: #2d3436;
+            font-size: 1.8em;
+            line-height: 1.4;
+            padding-left: 25px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .options-container {
+            display: grid;
+            gap: 15px;
+            margin: 25px 0;
+        }
+
+        /* 选择题样式 */
+        .choice-label {
+            display: flex;
+            align-items: center;
+            padding: 18px 25px;
+            background: #fff;
+            border: 2px solid #e0e6ff;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .choice-label:hover {
+            transform: translateX(10px);
+            border-color: var(--primary);
+            box-shadow: 0 5px 15px rgba(108, 92, 231, 0.1);
+        }
+
+        /* 填空题样式 */
+        .fill-input {
+            width: 100%;
+            padding: 16px 25px;
+            border: 2px solid #e0e6ff;
+            border-radius: 12px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+
+        .fill-input:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 10px rgba(108, 92, 231, 0.2);
+        }
+
+        /* 提交按钮 */
+        .submit-btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 16px 35px;
+            margin-top: 25px;
+            background: linear-gradient(135deg, var(--primary), #8175ff);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s ease;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(108, 92, 231, 0.3);
+        }
+
+        /* 解析样式 */
+        .analysis-box {
+            margin-top: 30px;
+            padding: 25px;
+            background: #f8f9ff;
+            border-radius: 12px;
+            border-left: 4px solid var(--primary);
+            animation: fadeIn 0.6s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 重新开始按钮 */
+        .restart-btn {
+            background: linear-gradient(135deg, #a8a4ff, #c3a1ff);
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="question-card">
+            <div class="question-header">
+                <h2 id="questionText"></h2>
+            </div>
+            <div id="inputContainer"></div>
+            <button class="submit-btn" onclick="checkAnswer()">提交答案</button>
+            <div class="analysis-box" id="analysisBox" style="display: none;">
+                <h3>? 答案解析</h3>
+                <p id="analysisText"></p>
+                <button class="submit-btn restart-btn" onclick="loadNewQuestion()">再来一题</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 智能题库系统
+        const questionBank = [
+            {
+                type: "choice",
+                question: "「柠檬市场」理论主要解释哪个领域的现象？",
+                options: ["金融市场", "二手车市场", "人力资源市场", "农产品市场"],
+                answer: 1,
+                analysis: "正确解析：该理论由诺贝尔经济学奖得主乔治·阿克洛夫提出，揭示了信息不对称如何导致劣质商品驱逐优质商品的市场现象。"
+            },
+            {
+                type: "fill",
+                question: "心理学中的「吊桥效应」是指危险场景会增强___的错觉。",
+                answer: "吸引力",
+                analysis: "深度解析：当人们处于紧张状态时，容易把生理唤醒错误归因为对他人的好感，这是情绪认知的经典理论。"
+            },
+            {
+                type: "choice",
+                question: "以下哪种颜色在可见光中波长最长？",
+                options: ["蓝色", "绿色", "红色", "黄色"],
+                answer: 2,
+                analysis: "科学原理：可见光波长范围380-780nm，红色光波长最长（620-750nm），紫色光最短。"
+            }
+        ];
+
+        let currentQuestion = null;
+
+        // 初始化加载题目
+        function loadNewQuestion() {
+            document.getElementById('analysisBox').style.display = 'none';
+            const randomIndex = Math.floor(Math.random() * questionBank.length);
+            currentQuestion = questionBank[randomIndex];
+            renderQuestion();
+        }
+
+        // 动态渲染题目
+        function renderQuestion() {
+            const questionEl = document.getElementById('questionText');
+            const inputContainer = document.getElementById('inputContainer');
+          
+            questionEl.textContent = currentQuestion.question;
+            inputContainer.innerHTML = '';
+
+            if (currentQuestion.type === 'choice') {
+                inputContainer.innerHTML = currentQuestion.options.map((option, index) => `
+                    <label class="choice-label">
+                        <input type="radio" name="answer" value="${index}" style="margin-right: 12px;">
+                        ${String.fromCharCode(65 + index)}. ${option}
+                    </label>
+                `).join('');
+            } else {
+                inputContainer.innerHTML = `
+                    <input type="text" class="fill-input" placeholder="请输入你的答案...">
+                `;
+            }
+        }
+
+        // 智能答案验证
+        function checkAnswer() {
+            const analysisBox = document.getElementById('analysisBox');
+            const analysisText = document.getElementById('analysisText');
+            let isCorrect = false;
+
+            if (currentQuestion.type === 'choice') {
+                const selected = document.querySelector('input[name="answer"]:checked');
+                isCorrect = selected && parseInt(selected.value) === currentQuestion.answer;
+            } else {
+                const answerInput = document.querySelector('.fill-input');
+                isCorrect = answerInput.value.trim().toLowerCase() === 
+                          currentQuestion.answer.toLowerCase();
+            }
+
+            analysisText.innerHTML = `${isCorrect ? '? 正确！' : '? 再想想～'} ${currentQuestion.analysis}`;
+            analysisBox.style.display = 'block';
+        }
+
+        // 首次加载
+        window.onload = loadNewQuestion;
+    </script>
+</body>
+</html>
